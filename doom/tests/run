@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# test this config in a throwaway doom: a fake home, an invisible sway, and emacs killed
+# hard at the end so it can't write back into the real .local/.
+#
+#   tests/run              every suite
+#   tests/run pdf keys     only these suites, by name
+set -u
+
+tests=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+config=$(dirname "$tests")
+emacs_dir=${EMACSDIR:-$HOME/.config/emacs}
+real_home=$HOME
+tmp=$(mktemp -d)
+runtime=$tmp/runtime
+mkdir -m 700 "$runtime"
+sway_pid=
+emacs_pid=
+failed=0
+
+cleanup() {
+    [ -n "$emacs_pid" ] && kill -9 "$emacs_pid" 2>/dev/null
+    [ -n "$sway_pid" ] && kill "$sway_pid" 2>/dev/null
+    if [ "${TOADTEST_KEEP:-}" = 1 ]; then
+        echo "test files kept at $tmp"
+    else
+        rm -rf "$tmp"
+    fi
+}
+trap cleanup EXIT
+
+touch "$tmp/marker"
+
+# an invisible compositor, so a real gui frame opens without touching the desktop
+printf 'output HEADLESS-1 resolution 1600x900\n' > "$tmp/sway.conf"
+before=$(ls "$runtime" | grep -E '^wayland-[0-9]+$' | sort)
+env -u WAYLAND_DISPLAY -u SWAYSOCK -u DISPLAY HOME="$tmp" XDG_RUNTIME_DIR="$runtime" \
+    WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=pixman \
+    sway -d -c "$tmp/sway.conf" >"$tmp/sway.log" 2>&1 &
+sway_pid=$!
+display=
+for _ in $(seq 50); do
+    display=$(comm -13 <(echo "$before") <(ls "$runtime" | grep -E '^wayland-[0-9]+$' | sort) | head -1)
+    [ -n "$display" ] && break
+    sleep 0.2
+done
+if [ -z "$display" ]; then
+    echo "headless sway did not start:"; tail -40 "$tmp/sway.log"
+    exit 1
+fi
+
+boot() {
+    local doomdir=$1 home=$tmp/home
+    rm -rf "$home" "$tmp/state" "$tmp/tmp"
+    mkdir -p "$home/.config" "$home/code" "$tmp/state" "$tmp/tmp"
+    chmod 700 "$tmp/state"
+    cp -r "$tests/fixtures/." "$home/"
+    git -C "$home/org" init -q
+    git -C "$home/org" config user.name Test
+    git -C "$home/org" config user.email test@example.invalid
+    git -C "$home/org" add -A
+    git -C "$home/org" commit -qm fixture
+    # doom's compiled profile stores paths as ~/.config/emacs
+    ln -s "$emacs_dir" "$home/.config/emacs"
+    ln -s "$doomdir" "$home/.config/doom"
+    env -u DISPLAY HOME="$home" DOOMDIR="$doomdir/" XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY="$display" GDK_BACKEND=wayland \
+        EMACS_SERVER_NAME=toadtest TOADTEST_HOME="$home/" TOADTEST_STATE="$tmp/state/" \
+        TOADTEST_WITHOUT="${without:-}" TMPDIR="$tmp/tmp" \
+        emacs --init-directory="$emacs_dir" -l "$tests/start.el" >"$tmp/emacs.log" 2>&1 &
+    emacs_pid=$!
+    for _ in $(seq 90); do
+        [ -f "$tmp/state/toadtest" ] && return 0
+        sleep 1
+    done
+    return 1
+}
+
+run_suite() {  # label suite doomdir
+    local label=$1 suite=$2 doomdir=$3 out=$tmp/out
+    rm -f "$out"
+    if ! boot "$doomdir"; then
+        printf '%-28s FAILED: emacs did not start\n' "$label"
+        tail -5 "$tmp/emacs.log"
+        failed=1
+        kill -9 "$emacs_pid" 2>/dev/null; emacs_pid=
+        return
+    fi
+    sleep 2
+    timeout 240 emacsclient -f "$tmp/state/toadtest" \
+        --eval "(toadtest-run \"$tests/lib.el\" \"$tests/$suite.el\" \"$out\")" >/dev/null 2>&1
+    kill -9 "$emacs_pid" 2>/dev/null
+    wait "$emacs_pid" 2>/dev/null
+    emacs_pid=
+    if [ ! -f "$out" ]; then
+        printf '%-28s FAILED: no result, a prompt may be blocking it\n' "$label"
+        failed=1
+    elif head -1 "$out" | grep -q '^ok'; then
+        printf '%-28s %s\n' "$label" "$(head -1 "$out")"
+    else
+        printf '%-28s %s\n' "$label" "$(head -1 "$out")"
+        tail -n +2 "$out" | sed 's/^/    /'
+        failed=1
+    fi
+}
+
+run_modular() {
+    local module dir=$tmp/without
+    for module in $(grep -oE 'lisp/[a-z/]+' "$config/config.el" | grep -Ev '^lisp/(lib|places)$'); do
+        rm -rf "$dir"; mkdir -p "$dir"
+        for f in init.el packages.el lisp themes; do ln -s "$config/$f" "$dir/$f"; done
+        grep -v "\"$module\"" "$config/config.el" > "$dir/config.el"
+        without=$module run_suite "without $module" modular "$dir"
+    done
+}
+
+if [ $# -gt 0 ]; then
+    suites=("$@")
+else
+    suites=(org org-workflow keys pdf settings ui langs stability modular)
+fi
+
+for suite in "${suites[@]}"; do
+    if [ "$suite" = modular ]; then
+        run_modular
+    else
+        run_suite "$suite" "$suite" "$config"
+    fi
+done
+
+touched=$(find "$emacs_dir/.local" -type f -newer "$tmp/marker" -not -path '*/eln/*' 2>/dev/null)
+if [ -n "$touched" ]; then
+    echo "note: these real files changed during the run (is your own emacs open?):"
+    echo "$touched" | sed 's/^/    /' | head
+fi
+touched=$(find "$real_home/org" -type f -newer "$tmp/marker" -not -path '*/.git/*' 2>/dev/null)
+if [ -n "$touched" ]; then
+    echo "note: these real org files changed during the run:"
+    echo "$touched" | sed 's/^/    /' | head
+fi
+
+exit "$failed"

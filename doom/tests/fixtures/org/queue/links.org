@@ -1,0 +1,4 @@
+#+TITLE: links
+
+* cool websites
+** [[https://example.com]]

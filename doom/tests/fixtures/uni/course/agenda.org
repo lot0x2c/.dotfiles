@@ -1,0 +1,3 @@
+* course
+** TODO [#A] fixture course task
+SCHEDULED: <2026-01-05 Mon>

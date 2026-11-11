@@ -1,0 +1,36 @@
+#!/bin/sh
+# your processes, busiest first. the full command line is searchable, so
+# "signal" finds signal's electron. enter sends TERM, shift+delete KILL,
+# ctrl+enter on typed text kills that pid or every process with that name
+
+# the name is argv[0]'s basename: nix wrappers keep the real name there, not in comm
+list() {
+    rofi=$(cat "$XDG_RUNTIME_DIR/rofi.pid" 2>/dev/null)
+    ps -u "$USER" -o pid=,ppid=,args= --sort=-pcpu |
+    awk -v rofi="$rofi" -v self="$$" '$1 != rofi && $2 != self {
+        name = $3; sub(".*/", "", name)
+        args = $0; sub(/^ *[0-9]+ +[0-9]+ +/, "", args)
+        printf "%s %s\0meta\037%s\037info\037%s\n", $1, name, args, $1
+    }'
+}
+
+pids() {
+    ps -u "$USER" -o pid=,args= |
+    awk -v want="$1" '{ name = $2; sub(".*/", "", name) } name == want { print $1 }'
+}
+
+case $ROFI_RETV in
+    1) err=$(kill -s TERM "$ROFI_INFO" 2>&1) && exit ;;
+    3) err=$(kill -s KILL "$ROFI_INFO" 2>&1) && exit ;;
+    2) case $1 in
+           *[!0-9]*) targets=$(pids "$1") ;;
+           *) targets=
+              if [ "$1" -gt 0 ] 2>/dev/null; then targets=$1; fi ;;
+       esac
+       err="no process: $1"
+       # unquoted: one argument per pid
+       # shellcheck disable=SC2086
+       [ -n "$targets" ] && err=$(kill -s TERM $targets 2>&1) && exit ;;
+esac
+[ -n "${err-}" ] && printf '\0message\037%s\n' "${err##*kill: }"
+list

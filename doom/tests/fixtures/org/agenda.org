@@ -1,0 +1,9 @@
+#+TITLE: agenda
+#+AUTHOR: test
+#+STARTUP: show2levels
+
+* agenda
+** TODO [#A] fixture urgent task
+* uni
+* contact
+* maint

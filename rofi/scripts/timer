@@ -1,0 +1,19 @@
+#!/bin/sh
+# "25m tea" starts one: any systemd time, a bare number is minutes. enter
+# pauses or resumes, shift+delete cancels
+
+timer=$HOME/.config/waybar/timer.sh
+
+case $ROFI_RETV in
+    1) error=$("$timer" toggle "$ROFI_INFO" 2>&1) ;;
+    2) time=${1%% *}
+       name=${1#"$time"}
+       error=$("$timer" start "$time" ${name:+"${name# }"} 2>&1) && exit ;;
+    3) error=$("$timer" cancel "$ROFI_INFO" 2>&1) ;;
+esac
+
+[ -n "${error-}" ] && printf '\0message\037%s\n' "$error"
+
+"$timer" list | while read -r id label; do
+    printf '%s\0info\037%s\n' "$label" "$id"
+done

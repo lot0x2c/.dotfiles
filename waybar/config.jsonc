@@ -1,0 +1,153 @@
+// apps start through swaymsg exec, so they outlive a waybar restart
+{
+  "layer": "top",
+  "position": "top",
+  "height": 26,
+  "spacing": 0,
+  "modules-left": ["group/workspaces", "sway/mode", "mpris", "sway/window"],
+  "modules-right": ["group/network", "group/audio", "backlight", "group/battery", "custom/timer", "clock"],
+  // each group below shares one [ ]: its first module opens it, its last closes it
+  "group/workspaces": {"orientation": "horizontal", "modules": ["custom/open", "sway/workspaces", "custom/close"]},
+  "custom/open": {"format": "[", "tooltip": false},
+  "custom/close": {"format": "]", "tooltip": false},
+  "sway/workspaces": {"all-outputs": true},
+  "sway/mode": {"format": "[{}]"},
+  "sway/window": {"format": "[{}]", "max-length": 200, "rewrite": {"(.*) — Mozilla Firefox": "$1"}},
+  "mpris": {
+    "format": "[{status_icon} {title}]",
+    "status-icons": {"playing": "●", "paused": "○", "stopped": "○"},
+    "title-len": 35,
+    "dynamic-order": ["artist", "album", "length"],
+    "tooltip-format": "{title}\n{dynamic}\n{player}\n\nclick: play/pause\nright-click: next · middle-click: previous"
+  },
+  "group/network": {"orientation": "horizontal", "modules": ["network", "custom/vpn"]},
+  "network": {
+    "format-wifi": "[<span color='#009d8b'>wifi</span> {essid} {signalStrength}",
+    "format-ethernet": "[<span color='#009d8b'>eth</span>",
+    "format-disconnected": "[offline",
+    "interval": 5,
+    // nmtui never rescans and its list goes stale, so scan first
+    "on-click": "swaymsg -q exec \"kitty --class nmtui -e sh -c 'echo scanning…; nmcli device wifi list --rescan yes >/dev/null; exec nmtui connect'\"",
+    "tooltip-format-wifi": "<b>{essid}</b>\nsignal     {signalStrength}% ({signaldBm} dBm)\nfrequency  {frequency} GHz\nbssid      {bssid}\ninterface  {ifname}\nip         {ipaddr}\ngateway    {gwaddr}\nspeed      ↓{bandwidthDownBytes} ↑{bandwidthUpBytes}\n\n<span alpha='60%'>click: nmtui</span>",
+    "tooltip-format-ethernet": "<b>{ifname}</b>\nip       {ipaddr}\ngateway  {gwaddr}\nspeed    ↓{bandwidthDownBytes} ↑{bandwidthUpBytes}\n\n<span alpha='60%'>click: nmtui</span>",
+    "tooltip-format-disconnected": "<b>no network</b>\n\n<span alpha='60%'>click: nmtui</span>"
+  },
+  "custom/vpn": {
+    "exec": "~/.config/waybar/vpn.sh",
+    "return-type": "json",
+    "format": " <span color='#009d8b'>vpn</span>{}]",
+    "interval": 5,
+    "on-click": "swaymsg -q exec protonvpn-app"
+  },
+  "group/audio": {"orientation": "horizontal", "modules": ["pulseaudio#volume", "pulseaudio#device", "bluetooth"]},
+  "pulseaudio#volume": {
+    "format": "[<span color='#009d8b'>vol</span>{volume}",
+    "format-muted": "[muted",
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "format-source": "mic {volume}%",
+    "format-source-muted": "mic muted",
+    "tooltip-format": "<b>volume {volume}%</b>\n{format_source}\n\n<span alpha='60%'>click: mute · scroll: volume</span>"
+  },
+  "pulseaudio#device": {
+    "format": " {icon}",
+    "format-muted": " {icon}",
+    "format-bluetooth": "",
+    "format-bluetooth-muted": "",
+    "format-icons": {
+      "speaker": "speakers",
+      "headphone": "earphones",
+      "headset": "earphones",
+      "hdmi": "hdmi",
+      "default": "audio"
+    },
+    "on-click": "swaymsg -q exec pavucontrol",
+    "tooltip-format": "<b>{desc}</b>\n\n<span alpha='60%'>click: pavucontrol</span>"
+  },
+  "bluetooth": {
+    "format": " <span color='#009d8b'>bt</span> {status}]",
+    "format-off": " <span color='#009d8b'>bt</span>0]",
+    "format-disabled": " <span color='#009d8b'>bt</span>0]",
+    // this module closes the audio bracket, so it can't be allowed to hide
+    "format-no-controller": " <span color='#009d8b'>bt</span>0]",
+    "format-connected": " <span color='#009d8b'>bt</span> {device_alias}]",
+    "format-on": " <span color='#009d8b'>bt</span>0]",
+    "on-click": "swaymsg -q exec blueman-manager",
+    "tooltip-format": "<b>bluetooth {status}</b>\n\n<span alpha='60%'>click: blueman</span>",
+    "tooltip-format-on": "<b>bluetooth on</b>\nnothing connected\n\n<span alpha='60%'>click: blueman</span>",
+    "tooltip-format-off": "<b>bluetooth off</b>\n\n<span alpha='60%'>click: blueman</span>",
+    "tooltip-format-disabled": "<b>bluetooth off</b>\n\n<span alpha='60%'>click: blueman</span>",
+    "tooltip-format-connected": "<b>{num_connections} connected</b>\n{device_enumerate}\n\n<span alpha='60%'>click: blueman</span>",
+    "tooltip-format-enumerate-connected": "{device_alias}  {device_address}",
+    "tooltip-format-enumerate-connected-battery": "{device_alias}  {device_battery_percentage}%  {device_address}"
+  },
+  "backlight": {
+    "format": "[<span color='#009d8b'>bri</span>{percent}]",
+    // same steps and floor as the brightness keys in sway/config
+    "on-scroll-up": "brightnessctl set 5%+",
+    "on-scroll-down": "brightnessctl --min-value=1 set 5%-",
+    "smooth-scrolling-threshold": 0.9,
+    "tooltip-format": "brightness {percent}%\nlaptop screen only\n\nscroll: change"
+  },
+  "group/battery": {
+    "orientation": "horizontal",
+    "modules": ["battery", "custom/charge", "power-profiles-daemon", "idle_inhibitor"]
+  },
+  "battery": {
+    "states": {"warning": 20, "critical": 10},
+    "format": "[<span color='#009d8b'>bat</span>{capacity}=",
+    "format-charging": "[<span color='#009d8b'>bat</span>{capacity}+",
+    "format-discharging": "[<span color='#009d8b'>bat</span>{capacity}-",
+    "tooltip-format": "<b>{capacity}%</b>  {timeTo}\npower   {power} W\nhealth  {health}%\ncycles  {cycles}"
+  },
+  "custom/charge": {
+    "exec": "~/.config/waybar/charge.sh",
+    "format": "/{}",
+    "interval": 30,
+    "signal": 8,
+    "exec-on-event": false,
+    "on-click": "~/.config/waybar/charge.sh toggle",
+    "tooltip-format": "<b>charge limit {}%</b>\nthe battery stops charging there\n\n<span alpha='60%'>click: switch between 80 and 100</span>"
+  },
+  "power-profiles-daemon": {
+    "format": " {icon}",
+    "format-icons": {"performance": "perf", "balanced": "pbal", "power-saver": "psav"},
+    "tooltip-format": "{profile}\ndriver  {driver}\n\nclick: next profile"
+  },
+  "custom/timer": {
+    "exec": "~/.config/waybar/timer.sh",
+    "return-type": "json",
+    "hide-empty-text": true,
+    "format": "[{}]",
+    "interval": 1,
+    "signal": 9,
+    "exec-on-event": false,
+    "on-click": "~/.config/waybar/timer.sh toggle",
+    "on-click-right": "~/.config/waybar/timer.sh cancel",
+    "on-click-middle": "swaymsg -q exec ~/.config/rofi/launch timer",
+    "on-scroll-up": "~/.config/waybar/timer.sh add 60",
+    "on-scroll-down": "~/.config/waybar/timer.sh add -60",
+    "smooth-scrolling-threshold": 0.9
+  },
+  "clock": {
+    "format": "[{:%a %d/%m %H:%M:%S}]",
+    "interval": 1,
+    "on-click": "swaymsg -q exec ~/.config/rofi/launch timer",
+    "tooltip-format": "<b>{:%A %d %B %Y}</b>\n<tt><small>{calendar}</small></tt>\n<span alpha='60%'>scroll: month · right-click: year</span>",
+    "calendar": {
+      "weeks-pos": "right",
+      "format": {
+        "months": "<b>{}</b>",
+        "weekdays": "<span color='#009d8b'>{}</span>",
+        "weeks": "<span color='#009d8b'><small>{}</small></span>",
+        "today": "<span color='#ed286f'><b><u>{}</u></b></span>"
+      }
+    },
+    "actions": {"on-click-right": "mode", "on-scroll-up": "shift_up", "on-scroll-down": "shift_down"}
+  },
+  "idle_inhibitor": {
+    "format": " {icon}]",
+    "format-icons": {"activated": "⬢", "deactivated": "⬡"},
+    "tooltip-format-activated": "<b>awake</b>\nwon't lock when idle\n\n<span alpha='60%'>click: let it lock</span>",
+    "tooltip-format-deactivated": "<b>idle</b>\nlocks after 10 idle minutes\n\n<span alpha='60%'>click: keep it unlocked</span>"
+  }
+}

@@ -1,0 +1,102 @@
+// which tabs each key opens, and the plugin options, are in launch
+
+configuration {
+    display-drun: "apps";
+    drun-display-format: "{name}";
+    show-icons: true;
+
+    // rofi's defaults also give the arrows to the cursor. ":" wraps from the
+    // first tab to emoji
+    kb-element-next:      "Tab";
+    kb-element-prev:      "ISO_Left_Tab";
+    kb-mode-next:         "Right";
+    kb-mode-previous:     "Left,colon";
+    kb-move-char-forward: "Control+f";
+    kb-move-char-back:    "Control+b";
+}
+
+// a second waybar: one line across the top, its height, font and colours
+@theme "/dev/null"
+
+* {
+    bg:     #fed9ed;
+    hover:  #f4c3da;
+    accent: #ed286f;
+    fg:     #cb2762;
+    strong: #a51d50;
+    faint:  #e48bb0;
+
+    background-color: @bg;
+    text-color:       @fg;
+    // waybar's 14px
+    font:             "Monaspace Neon NF 10.5";
+}
+
+// waybar's 26px, border included
+window {
+    anchor:       north;
+    location:     north;
+    width:        100%;
+    height:       26px;
+    border:       0 0 1px 0;
+    border-color: @accent;
+    children:     [ bar ];
+}
+
+bar {
+    orientation: horizontal;
+    children:    [ mode-switcher, entry, message, listview ];
+    padding:     0 6px;
+    spacing:     8px;
+}
+
+entry, textbox, button, element-text, element-icon {
+    vertical-align: 0.5;
+}
+
+button selected, element selected {
+    background-color: @hover;
+    text-color:       @strong;
+}
+
+mode-switcher {
+    expand:  false;
+    spacing: 0;
+}
+button {
+    expand:     false;
+    padding:    0 6px;
+    text-color: @faint;
+}
+
+entry {
+    expand:            false;
+    width:             8em;
+    placeholder:       "type…";
+    placeholder-color: @faint;
+}
+
+// pushes the items to the right
+message {
+    expand: true;
+}
+
+listview {
+    layout:  horizontal;
+    lines:   100;
+    spacing: 2px;
+}
+
+// 3 + 18px of text + 4 fills the 25px inside the border. another font or
+// size changes the 18
+element {
+    padding: 3px 6px 4px;
+    spacing: 5px;
+}
+element-icon {
+    size: 14px;
+}
+element-text, element-icon {
+    background-color: inherit;
+    text-color:       inherit;
+}

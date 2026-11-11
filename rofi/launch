@@ -1,0 +1,19 @@
+#!/bin/sh
+# launch [apps|timer|tools] [tab]
+# plugins only read the command line, so their options live here
+
+scripts=$HOME/.config/rofi/scripts
+case ${1:-apps} in
+    apps) modes=drun ;;
+    timer) modes=timer:$scripts/timer ;;
+    tools) modes=power:$scripts/power,calc,kill:$scripts/kill,emoji ;;
+    *) echo "usage: launch [apps|timer|tools] [tab]" >&2; exit 2 ;;
+esac
+
+# the first tab's name is everything before the first : or ,
+exec rofi -modes "$modes" -show "${2:-${modes%%[:,]*}}" \
+    -emoji-format '{emoji} {name}' \
+    -calc-command "printf %s '{result}' | wl-copy" \
+    -calc-command-history \
+    -hint-result '= ' \
+    -hint-welcome ''

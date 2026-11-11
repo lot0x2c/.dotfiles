@@ -1,0 +1,3 @@
+# goes in ~/.clang-format; without it clangd indents 2
+BasedOnStyle: LLVM
+IndentWidth: 4

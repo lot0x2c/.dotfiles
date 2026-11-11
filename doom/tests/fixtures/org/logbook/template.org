@@ -1,0 +1,12 @@
+#+TITLE: <name> log
+#+AUTHOR: test
+#+STARTUP: show2levels
+
+* gotd
+**
+* main quests
+** TODO
+** study
+*** TODO fixture study task
+* agenda
+* motd

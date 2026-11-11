@@ -1,0 +1,43 @@
+/* bubblegum, also in rofi/config.rasi and swaynag/config */
+@define-color bg     #fed9ed;
+@define-color accent #ed286f;
+@define-color fg     #cb2762;
+@define-color strong #a51d50;
+/* config.jsonc's labels hardcode it */
+@define-color teal   #009d8b;
+
+* {
+  font-family: "Monaspace Neon NF", monospace;
+  font-size: 14px;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+window#waybar {
+  background: @bg;
+  color: @fg;
+  border-bottom: 1px solid @accent;
+}
+.modules-left, .modules-right { padding: 0 6px; }
+/* tooltip * too, or the gtk theme's rules win */
+tooltip, tooltip * { background: @bg; color: @fg; }
+tooltip { border: 1px solid @accent; }
+tooltip label { padding: 2px 6px; }
+
+#workspaces button {
+  background: transparent;
+  color: @fg;
+  padding: 0 3px;
+  box-shadow: none;
+  text-shadow: none;
+}
+#workspaces button.focused { color: @strong; font-weight: bold; }
+#workspaces button.urgent, .warning, .critical {
+  color: @strong;
+  font-weight: bold;
+}
+
+#custom-timer { color: @teal; }
+#custom-timer.ending { font-weight: bold; }
+#custom-timer.paused { color: @fg; }
+#clock { font-weight: bold; }

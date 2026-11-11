@@ -1,0 +1,181 @@
+set $mod Mod4
+set $left h
+set $down j
+set $up k
+set $right l
+set $lock ~/.config/sway/lock.sh
+set $lg "LG Electronics LG IPS QHD 504TFHR1B929"
+
+set $ws1 "1:dev"
+set $ws2 "2:org"
+set $ws3 "3:web"
+set $ws4 "4:misc"
+set $ws5 "5:fax"
+set $ws6 "6:mux"
+set $ws7 "7:mon"
+
+# bubblegum. $dark is kitty's background
+set $accent #ed286f
+set $dark #352930
+
+### outputs
+output * bg ~/.config/sway/wxp.png fill
+output $lg mode 2560x1440@99.946Hz position 0 0
+output eDP-1 position 2560 0
+
+workspace $ws1 output $lg
+workspace $ws2 output $lg
+workspace $ws3 output $lg
+workspace $ws6 output $lg
+workspace $ws7 output $lg
+workspace $ws4 output eDP-1
+workspace $ws5 output eDP-1
+
+### input
+input type:touchpad {
+    tap enabled
+    middle_emulation enabled
+}
+input type:keyboard {
+    repeat_delay 250
+    repeat_rate 40
+}
+
+### look
+font pango:Monaspace Neon NF 10
+default_border pixel 2
+default_floating_border pixel 2
+gaps inner 8
+titlebar_padding 1
+titlebar_border_thickness 0
+seat * xcursor_theme Adwaita
+client.focused          $accent $accent $dark $accent $accent
+client.focused_inactive $dark   $dark   $dark $dark   $dark
+client.unfocused        $dark   $dark   $dark $dark   $dark
+
+### rules
+# waybar's clicks
+for_window [app_id="(?i)(pavucontrol|proton)"] floating enable, move position center
+for_window [app_id="^nmtui$"] floating enable, resize set 800 600, move position center
+for_window [app_id="(?i)blueman-manager"] floating enable, resize set width 480 px, move position center
+for_window [app_id="(?i)copyq"] floating enable, resize set 500 700, move position center
+# vlc asks to stay awake over d-bus, which swayidle never hears
+for_window [app_id="(?i)vlc"] inhibit_idle fullscreen
+for_window [class="(?i)vlc"] inhibit_idle fullscreen
+assign [app_id="^emacs$"] workspace number $ws2
+# autostarted by org-term.sh. their own app_ids, so $mod+Return kittys aren't caught
+assign [app_id="^org-term(-home)?$"] workspace number $ws2
+for_window [app_id="^org-term$"] resize set width 20 ppt, splitv, mark --add org-term
+for_window [app_id="^org-term-home$"] move container to mark org-term
+assign [app_id="(?i)(signal|whatsapp|simplex|session)"] workspace number $ws5
+assign [class="(?i)(signal|whatsapp|simplex|session)"] workspace number $ws5
+assign [app_id="(?i)(vlc|spotify|mpv)"] workspace number $ws6
+assign [class="(?i)(vlc|spotify|mpv)"] workspace number $ws6
+# anchored, so tor browser isn't caught here
+assign [app_id="^firefox"] workspace number $ws3
+# private windows share firefox's app_id, only the title differs.
+# for_window, not assign: it also fires when the title lands after the map
+for_window [app_id="^firefox" title="Private Browsing$"] move container to workspace number 8, workspace number 8
+# exact: a bare "tor" also matches qbittorrent
+assign [app_id="^Tor Browser$"] workspace number 8
+assign [app_id="(?i)(bitwarden|feather|proton.?vpn)"] workspace number 8
+assign [class="(?i)(bitwarden|feather|proton.?vpn)"] workspace number 8
+
+### keys
+bindsym $mod+Return exec kitty
+bindsym $mod+d exec ~/.config/rofi/launch
+bindsym $mod+t exec ~/.config/rofi/launch timer
+bindsym $mod+Shift+d exec ~/.config/rofi/launch tools
+bindsym $mod+v exec copyq show
+bindsym $mod+grave exec dunstctl close
+bindsym $mod+Shift+grave exec dunstctl history-pop
+bindsym $mod+q kill
+bindsym $mod+Escape exec $lock
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaynag -t warning -m 'exit sway?' -B 'exit' 'swaymsg exit'
+floating_modifier $mod normal
+
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+5 workspace number $ws5
+bindsym $mod+6 workspace number $ws6
+bindsym $mod+7 workspace number $ws7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 10
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+bindsym $mod+Shift+5 move container to workspace number $ws5
+bindsym $mod+Shift+6 move container to workspace number $ws6
+bindsym $mod+Shift+7 move container to workspace number $ws7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+bindsym $mod+Tab workspace back_and_forth
+
+bindsym $mod+b splith
+bindsym $mod+n splitv
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+bindsym $mod+f fullscreen
+bindsym $mod+space focus mode_toggle
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+minus scratchpad show
+bindsym $mod+Shift+minus move scratchpad
+
+mode "resize" {
+    bindsym $left resize shrink width 10px
+    bindsym $down resize grow height 10px
+    bindsym $up resize shrink height 10px
+    bindsym $right resize grow width 10px
+    bindsym Left resize shrink width 10px
+    bindsym Down resize grow height 10px
+    bindsym Up resize shrink height 10px
+    bindsym Right resize grow width 10px
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+r mode "resize"
+
+bindsym --locked XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym --locked XF86AudioMicMute exec wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+bindsym --locked XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym --locked XF86AudioRaiseVolume exec wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym --locked XF86MonBrightnessDown exec brightnessctl --min-value=1 set 5%-
+bindsym --locked XF86MonBrightnessUp exec brightnessctl set 5%+
+bindsym --locked XF86AudioPlay exec playerctl play-pause
+bindsym --locked XF86AudioPause exec playerctl play-pause
+bindsym --locked XF86AudioNext exec playerctl next
+bindsym --locked XF86AudioPrev exec playerctl previous
+bindsym Print exec ~/.config/sway/screenshot.sh
+bindsym Shift+Print exec ~/.config/sway/screenshot.sh screen
+
+### autostart
+# claims the keyring pam unlocked at login. the daemon quits if nothing does,
+# then the next secret request starts a locked one and asks for the password
+exec gnome-keyring-daemon --start --components=secrets
+# Keep these until session.nix is activated; switch both together (see README).
+exec copyq
+exec ~/.config/dunst/battery.sh
+exec ~/.config/dunst/tick.sh
+exec autotiling-rs
+exec swayidle -w timeout 600 $lock before-sleep $lock lock $lock
+exec emacs
+exec ~/.config/sway/org-term.sh
+
+# session env for systemd, starts waybar
+include /etc/sway/config.d/*

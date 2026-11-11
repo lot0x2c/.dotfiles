@@ -1,0 +1,47 @@
+[global]
+    follow = keyboard
+    offset = (20, 20)
+    gap_size = 6
+    padding = 10
+    horizontal_padding = 12
+    frame_width = 2
+    frame_color = "#ed286f"
+    progress_bar_corner_radius = 5
+
+    font = Monaspace Neon NF 11
+    enable_recursive_icon_lookup = true
+    # dunst ignores the system theme
+    icon_theme = Chicago95
+    # screenshot thumbnails
+    max_icon_size = 64
+
+    dmenu = rofi -dmenu -p dunst:
+    browser = xdg-open
+
+[urgency_low]
+    background = "#fed9ed"
+    foreground = "#cb2762"
+    highlight = "#ed286f"
+
+[urgency_normal]
+    background = "#fed9ed"
+    foreground = "#cb2762"
+    highlight = "#ed286f"
+
+# the "important" tag: notify-send -u critical. red, and stays until closed.
+# the timer and critical power alerts use it
+[urgency_critical]
+    background = "#d7193f"
+    foreground = "#fff4f7"
+    frame_color = "#7d0a24"
+    highlight = "#ffd23f"
+    timeout = 0
+
+# the "reminder" tag: notify-send -c reminder. teal, like the waybar timer.
+# the 10 minute ticks and the battery from 90% to 30% use it
+[reminder]
+    category = reminder
+    background = "#d3f5ef"
+    foreground = "#00695e"
+    frame_color = "#009d8b"
+    highlight = "#009d8b"

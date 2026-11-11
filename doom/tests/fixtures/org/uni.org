@@ -1,0 +1,5 @@
+* course one
+** deadlines
+*** TODO fixture uni quiz
+DEADLINE: <2026-01-05 Mon>
+** rubric

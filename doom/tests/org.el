@@ -1,0 +1,20 @@
+;;; tests/org.el -*- lexical-binding: t; -*-
+(require 'org)
+(with-temp-buffer
+  (ro15rend/insert-link "title" "https://example.test")
+  (check "ordinary links stay ordinary Org text"
+         (equal (buffer-string) "[[https://example.test][title]]")))
+(let ((file (expand-file-name "~/org/logbook/empty.org")))
+  (with-current-buffer (find-file-noselect file)
+    (check "background visit does not write a template" (not (file-exists-p file)))
+    (check "background visit leaves the buffer empty" (zerop (buffer-size))))
+  (ro15rend/org-open file)
+  (check "explicit open creates the templated note" (file-exists-p file))
+  (check "template name expands" (string-match-p "empty log" (buffer-string))))
+(ro15rend/org-inbox)
+(check "weekly inbox uses current ISO week" (equal (org-get-heading t t t t) (this-week)))
+(let ((before (buffer-string)))
+  (ro15rend/org-inbox-new-week)
+  (check "new-week cannot duplicate or invent a future week" (equal before (buffer-string))))
+(check "capture targets inbox" (equal (nth 1 (nth 3 (assoc "t" org-capture-templates))) (ro15rend/org-inbox-file)))
+(check "capture does not add ID properties" (not (string-match-p ":ID:" (nth 4 (assoc "t" org-capture-templates)))))

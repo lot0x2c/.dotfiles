@@ -1,0 +1,10 @@
+# bubblegum, waybar's colours
+font=Monaspace Neon NF 10.5
+
+[warning]
+background=fed9ed
+text=cb2762
+border=ed286f
+border-bottom=ed286f
+button-background=f4c3da
+button-text=a51d50
